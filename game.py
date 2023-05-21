@@ -1,4 +1,5 @@
 import itertools as it
+from typing import Tuple
 from alg import game, iter_game
 from functools import reduce
 
@@ -11,7 +12,7 @@ set1 = map(
 res1 = [(i, j) for i in range(count1 + 1) for j in range(count1 + 1 - i)]
 
 
-def check1(a: str, b: str) -> (int, int):
+def check1(a: str, b: str) -> Tuple[int, int]:
     buf = len(list(
         filter(lambda l: l[0] == l[1], zip(a, b))
     ))
