@@ -1,10 +1,13 @@
 module BuffCowGame where
+import Data.List
 
+-- тип ответа --
 data Answer where
   Answer :: [Char] -> Answer
   deriving (Eq, Ord, Read)
 
 charList = "123456789"
+
 testAnswer = Answer "9856"
 wordLength = lengthAnswer testAnswer where
     lengthAnswer (Answer x) = length x
@@ -15,15 +18,20 @@ instance Show Answer where
     show (Answer x) = show x
 
 
-data Result = Result (Int, Int) | Win deriving (Eq, Ord, Read)
+data Result where
+  Result :: (Int, Int) -> Result
+  Win :: Result
+  deriving (Eq, Ord, Read)
 
 instance Show Result where
     show (Result (x,y)) = show x ++ " быков, " ++ show y ++ " коровы"
     show Win = "Да!"
 
-fullResultSpace = [ Result (i,j) | i <- [0..wordLength], j <- [0..wordLength], k <- [0..wordLength], (i+j+k == wordLength) ]
+fullResultSpace = [ Result (i,j) | i <- [0..wordLength], j <- [0..wordLength], k <- [0..wordLength], i+j+k == wordLength ]
 
-data History = History [(Answer, Result)]
+data History where
+  History :: [(Answer, Result)] -> History
+
 instance Show History where
     show (History []) = ""
     show (History [(a,r)]) = show a ++ " (" ++ show r ++ ")"
@@ -31,22 +39,19 @@ instance Show History where
 
 
 check :: Answer -> Answer -> Result
-check a@(Answer x) b@(Answer y) =
+check (Answer a) (Answer b) =
     if a == b then Win
-    else Result (calcBuffCow x y)
+    else Result (hint a b)
     where
-        calcBuffCow :: [Char] -> [Char] -> (Int, Int)
-        calcBuffCow a b = (buff,cow)
+        hint :: [Char] -> [Char] -> (Int, Int)
+        hint a b = (buff, cow)
             where
-                buff = length $ filter (\a -> fst a == snd a) (zip a b)
-                cow = (length c) - buff - (length $ uniq c [])
+                buff = length (filter (uncurry (==)) (zip a b))
+                cow = length c - buff - length (nub c)
                 c = a ++ b
-                uniq :: (Eq a) => [a] -> [a] -> [a]
-                uniq [] ys = ys
-                uniq (x:xs) ys = if elem x ys then uniq xs ys else uniq xs (x:ys) 
 
 
-fullAnswerSpace = map (\x -> Answer x) $ genAnswerSpace charList wordLength
+fullAnswerSpace = map Answer (genAnswerSpace charList wordLength)
     where
         genAnswerSpace :: [Char] -> Int -> [[Char]]
         genAnswerSpace charList 0 = [""]
@@ -55,14 +60,14 @@ fullAnswerSpace = map (\x -> Answer x) $ genAnswerSpace charList wordLength
 
         del :: (Eq a) => [a] -> a -> [a]
         del [] _ = []
-        del (x:xs) y = if x==y then xs else x:(del xs y)
+        del (x:xs) y = if x==y then xs else x:del xs y
 
 
 strategy :: History -> Answer
-strategy history = let 
+strategy history = let
     filterAnswerSpace :: History -> [Answer] -> [Answer]
     filterAnswerSpace (History []) answerSpace = answerSpace
-    filterAnswerSpace (History ((ans,res):xs)) answerSpace = 
+    filterAnswerSpace (History ((ans,res):xs)) answerSpace =
         filterAnswerSpace (History (xs)) [answer | answer <- answerSpace, (check ans answer) == res]
     in head $ filterAnswerSpace history fullAnswerSpace
 
